@@ -15,6 +15,12 @@ declare type CreateFetchModel = <P = any, V = any>(params: {
     getContext: () => V;
     getStatus: () => Status;
 };
+declare const factoryFetchModel: (params: {
+    fetch: Function;
+    plugins?: [];
+}) => {
+    createFetchModel: CreateFetchModel;
+    initModel: () => void;
+};
 export declare const useRequestState: (arr: any) => any;
-export declare const useAutoRequest: (params: ReturnType<CreateFetchModel>) => void;
-export default createFetchModel;
+export default factoryFetchModel;

@@ -1,9 +1,9 @@
 {
   "name": "mobx-fetch-model",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "manage your fetch data with mobx",
   "main": "index.js",
-  "repository": {"url": "https://github.com/zheNeng/mobx-fetchModel"},
+  "repository": {"url": "https://github.com/zheNeng/mobx-fetch-model"},
   "scripts": {
     "tsc": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
