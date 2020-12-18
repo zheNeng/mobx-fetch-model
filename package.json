@@ -1,6 +1,6 @@
 {
   "name": "mobx-fetch-model",
-  "version": "1.0.3",
+  "version": "1.0.7",
   "description": "manage your fetch data with mobx",
   "main": "index.js",
   "repository": {"url": "https://github.com/zheNeng/mobx-fetch-model"},
@@ -16,5 +16,6 @@
   "dependencies": {
     "@types/lodash": "^4.14.165",
     "lodash": "^4.17.20"
-  }
+  },
+  "keywords": ["mobx","fetch","model","react","store"]
 }

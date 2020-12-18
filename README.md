@@ -36,9 +36,11 @@ login.dispatch(params)
 ```
 ## 在项目获得返回请求值
 ```ts
-const {token} = login.getContext()
 // 这里不需要担心解构会失败，因为内部根据 initValue 做的布丁，无论如何都会返回一个{ token }的对象结构
-// 同时，如果你的react组件是被 observer 的，那么
+const {token} = login.getContext()
+// status 可能有"loading" | "fail" | "success" | "init"; 4 个状态。
+const status= login.getStatus() 
+
 ```
 ## 在 mobx 的 store 中使用
 ```ts
