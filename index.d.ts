@@ -15,12 +15,17 @@ declare type CreateFetchModel = <P = any, V = any>(params: {
     getContext: () => V;
     getStatus: () => Status;
 };
-declare const factoryFetchModel: (params: {
-    fetch: Function;
-    plugins?: [];
-}) => {
+declare type Plugin = (state: any, params: any) => ({
+    handelSuccess: (res: any) => void;
+    handelFail: (res: any) => void;
+});
+declare type FactoryFetchModel = (params: {
+    fetch: any;
+    plugins: Plugin[];
+}) => ({
     createFetchModel: CreateFetchModel;
     initModel: () => void;
-};
+});
+declare const factoryFetchModel: FactoryFetchModel;
 export declare const useRequestState: (arr: any) => any;
 export default factoryFetchModel;

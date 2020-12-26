@@ -16,8 +16,16 @@ type CreateFetchModel = <P = any, V = any>(params: {
   getContext: () => V;
   getStatus: () => Status;
 };
+type Plugin=(state:any,params:any)=>({
+  handelSuccess:(res:any)=>void,
+  handelFail:(res:any)=>void,
+})
 
-const requestDataPlugin = (state, params) => {
+type FactoryFetchModel=(params:{fetch:any,plugins:Plugin[]})=>({
+  createFetchModel:CreateFetchModel, initModel:()=>void
+})
+
+const requestDataPlugin:Plugin = (state, params) => {
   const { url, initValue, failValue } = params;
   state.requestData[url] = cloneDeep(initValue);
   return {
@@ -32,7 +40,7 @@ const requestDataPlugin = (state, params) => {
     },
   };
 };
-const persistencePlugin = (state, params) => {
+const persistencePlugin:Plugin = (state, params) => {
   const { persistence = {}, url, initValue, failValue } = params;
   const { isNeed } = persistence;
   const getCacheFromLocalStore = (key, defaultValue) => {
@@ -73,7 +81,7 @@ const persistencePlugin = (state, params) => {
   }
 
 }
-const requestStatusPlugin = (state, params) => {
+const requestStatusPlugin:Plugin = (state, params) => {
   const { url } = params;
   state.requestStatus[url] = "init";
   return {
@@ -124,7 +132,7 @@ const structureFromInitValuePlugin = (state, params) => {
   }
 }
 
-const factoryFetchModel = (params: { fetch: Function; plugins?: [] }) => {
+const factoryFetchModel:FactoryFetchModel = (params) => {
   const { fetch = window.fetch, plugins = [] } = params;
   const initPlugins = [structureFromInitValuePlugin, requestDataPlugin, requestStatusPlugin, persistencePlugin, ...plugins];
   const state:{requestData: { [key: string]: any },requestStatus: { [key: string]: Status }}={requestData:{},requestStatus:{}}
