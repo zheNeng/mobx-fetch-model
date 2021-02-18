@@ -113,7 +113,7 @@ const factoryFetchModel = (params) => {
     const initPlugins = [structureFromInitValuePlugin, requestDataPlugin, requestStatusPlugin, persistencePlugin, ...plugins];
     const state = { requestData: {}, requestStatus: {} };
     const createFetchModel = (params) => {
-        const { url, initValue, mergeParams = (value) => value, requestOption = {}, frequencyFn = null, } = params;
+        const { url, initValue, mergeParams = (value) => value, requestOption = {}, frequencyFn = null, delayGc = { isNeed: false } } = params;
         const handelPlugin = initPlugins.map((plugin) => {
             if (typeof plugin === "function") {
                 return plugin(state, params);
@@ -123,6 +123,11 @@ const factoryFetchModel = (params) => {
                 handelFail() { },
             };
         });
+        const resetState = () => {
+            state.requestData[url] = lodash_1.cloneDeep(initValue);
+            state.requestStatus[url] = 'init';
+        };
+        const delayResetState = lodash_1.debounce(resetState, delayGc.time || 1000 * 60 * 10); // 10m
         const dispatch = (params) => new Promise((resolve, reject) => {
             state.requestStatus[url] = "loading";
             fetch(url, mergeParams(params), requestOption)
@@ -136,11 +141,18 @@ const factoryFetchModel = (params) => {
                 reject(err);
             });
         });
-        return {
-            dispatch: frequencyFn ? frequencyFn(dispatch) : dispatch,
-            getContext: () => state.requestData[url] !== undefined
+        const getContext = () => {
+            if (delayGc && delayGc.isNeed) {
+                delayResetState();
+            }
+            return state.requestData[url] !== undefined
                 ? state.requestData[url]
-                : lodash_1.cloneDeep(initValue),
+                : lodash_1.cloneDeep(initValue);
+        };
+        return {
+            resetState,
+            dispatch: frequencyFn ? frequencyFn(dispatch) : dispatch,
+            getContext,
             getStatus: () => state.requestStatus[url] !== undefined ? state.requestStatus[url] : "init",
         };
     };

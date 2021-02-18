@@ -9,11 +9,16 @@ declare type CreateFetchModel = <P = any, V = any>(params: {
     };
     frequencyFn?: (...arg: any[]) => any;
     requestOption?: any;
+    delayGc?: {
+        time?: number;
+        isNeed: boolean;
+    };
     [key: string]: any;
 }) => {
     dispatch: (params: P, option?: any) => Promise<V>;
     getContext: () => V;
     getStatus: () => Status;
+    resetState: () => void;
 };
 declare type Plugin = (state: any, params: any) => ({
     handelSuccess: (res: any) => void;

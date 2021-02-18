@@ -1,6 +1,6 @@
 {
   "name": "mobx-fetch-model",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "manage your fetch data with mobx",
   "main": "index.js",
   "repository": {"url": "https://github.com/zheNeng/mobx-fetch-model"},
