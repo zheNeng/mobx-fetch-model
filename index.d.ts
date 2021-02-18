@@ -1,3 +1,4 @@
+import SyncHook from './syncHook';
 declare type Status = "loading" | "fail" | "success" | "init";
 declare type CreateFetchModel = <P = any, V = any>(params: {
     url: string;
@@ -20,10 +21,7 @@ declare type CreateFetchModel = <P = any, V = any>(params: {
     getStatus: () => Status;
     resetState: () => void;
 };
-declare type Plugin = (state: any, params: any) => ({
-    handelSuccess: (res: any) => void;
-    handelFail: (res: any) => void;
-});
+declare type Plugin = (state: any, params: any, hooks: SyncHook) => void;
 declare type FactoryFetchModel = (params: {
     fetch: any;
     plugins: Plugin[];

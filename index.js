@@ -2,24 +2,21 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.useRequestState = void 0;
 const mobx_1 = require("mobx");
+const syncHook_1 = require("./syncHook");
 const lodash_1 = require("lodash");
-const requestDataPlugin = (state, params) => {
+const requestDataPlugin = (state, params, hook) => {
     const { url, initValue, failValue } = params;
-    state.requestData[url] = lodash_1.cloneDeep(initValue);
-    return {
-        handelSuccess(res) {
-            state.requestData[url] = res;
-        },
-        handelFail(err) {
-            if (failValue) {
-                state.requestData[url] = failValue;
-            }
-        },
-    };
+    hook.tap('init', () => state.requestData[url] = lodash_1.cloneDeep(initValue));
+    hook.tap('handelSuccess', (res) => state.requestData[url] = res);
+    hook.tap('handelFail', (err) => {
+        if (failValue) {
+            state.requestData[url] = failValue;
+        }
+    });
 };
-const persistencePlugin = (state, params) => {
+const persistencePlugin = (state, params, hook) => {
     const { persistence = {}, url, initValue, failValue } = params;
-    const { isNeed } = persistence;
+    const { isNeed = false } = persistence;
     const getCacheFromLocalStore = (key, defaultValue) => {
         let res;
         const value = localStorage.getItem(key);
@@ -43,35 +40,23 @@ const persistencePlugin = (state, params) => {
         localStorage.setItem(key, res);
     };
     if (isNeed) {
-        state.requestData[url] = getCacheFromLocalStore(url, lodash_1.cloneDeep(initValue));
-        return {
-            handelSuccess(res) {
-                setCacheToLocalStore(url, res);
-            },
-            handelFail() { }
-        };
-    }
-    else {
-        return {
-            handelSuccess() {
-            },
-            handelFail() { }
-        };
+        hook.tap('init', () => {
+            state.requestData[url] = getCacheFromLocalStore(url, lodash_1.cloneDeep(initValue));
+        });
+        hook.tap('handelSuccess', (res) => {
+            setCacheToLocalStore(url, res);
+        });
     }
 };
-const requestStatusPlugin = (state, params) => {
+const requestStatusPlugin = (state, params, hook) => {
     const { url } = params;
-    state.requestStatus[url] = "init";
-    return {
-        handelSuccess(res) {
-            state.requestStatus[url] = "success";
-        },
-        handelFail(err) {
-            state.requestStatus[url] = "fail";
-        },
-    };
+    hook.tap('init', () => {
+        state.requestStatus[url] = "init";
+    });
+    hook.tap('handelSuccess', () => state.requestStatus[url] = "success");
+    hook.tap('handelFail', () => state.requestStatus[url] = "fail");
 };
-const structureFromInitValuePlugin = (state, params) => {
+const structureFromInitValuePlugin = (state, params, hook) => {
     const { initValue } = params;
     const toStructureFromObj = (obj) => {
         const res = [];
@@ -100,13 +85,9 @@ const structureFromInitValuePlugin = (state, params) => {
         });
     };
     const structureFromInitValue = toStructureFromObj(initValue);
-    return {
-        handelSuccess(res) {
-            checkResponse(res, structureFromInitValue);
-        },
-        handelFail(err) {
-        },
-    };
+    hook.tap('handelSuccess', (res) => {
+        checkResponse(res, structureFromInitValue);
+    });
 };
 const factoryFetchModel = (params) => {
     const { fetch = window.fetch, plugins = [] } = params;
@@ -114,14 +95,12 @@ const factoryFetchModel = (params) => {
     const state = { requestData: {}, requestStatus: {} };
     const createFetchModel = (params) => {
         const { url, initValue, mergeParams = (value) => value, requestOption = {}, frequencyFn = null, delayGc = { isNeed: false } } = params;
-        const handelPlugin = initPlugins.map((plugin) => {
+        const syncHook = new syncHook_1.default();
+        initPlugins.forEach((plugin) => {
             if (typeof plugin === "function") {
-                return plugin(state, params);
+                return plugin(state, params, syncHook);
             }
-            return {
-                handelSuccess() { },
-                handelFail() { },
-            };
+            syncHook.call('init');
         });
         const resetState = () => {
             state.requestData[url] = lodash_1.cloneDeep(initValue);
@@ -132,12 +111,12 @@ const factoryFetchModel = (params) => {
             state.requestStatus[url] = "loading";
             fetch(url, mergeParams(params), requestOption)
                 .then((res) => {
-                handelPlugin.forEach((plugin) => plugin.handelSuccess && plugin.handelSuccess(res));
+                syncHook.call('handelSuccess', res);
                 resolve(res);
                 return res;
             })
                 .catch((err) => {
-                handelPlugin.forEach((plugin) => plugin.handelFail && plugin.handelFail(err));
+                syncHook.call('handelFail', err);
                 reject(err);
             });
         });
