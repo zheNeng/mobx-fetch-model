@@ -1,5 +1,6 @@
 import { observable } from "mobx";
-import { cloneDeep, get, set } from "lodash";
+import { cloneDeep, get, set, debounce } from "lodash";
+
 type Status = "loading" | "fail" | "success" | "init";
 // V 是返回值,P 是请求参数
 type CreateFetchModel = <P = any, V = any>(params: {
@@ -10,11 +11,13 @@ type CreateFetchModel = <P = any, V = any>(params: {
   persistence?: { isNeed: boolean };
   frequencyFn?: (...arg: any[]) => any;
   requestOption?: any;
+  delayGc?: { time?: number, isNeed: boolean }
   [key: string]: any;
 }) => {
   dispatch: (params: P, option?: any) => Promise<V>;
   getContext: () => V;
   getStatus: () => Status;
+  resetState:()=>void
 };
 type Plugin=(state:any,params:any)=>({
   handelSuccess:(res:any)=>void,
@@ -132,10 +135,10 @@ const structureFromInitValuePlugin = (state, params) => {
   }
 }
 
-const factoryFetchModel:FactoryFetchModel = (params) => {
+const factoryFetchModel: FactoryFetchModel = (params) => {
   const { fetch = window.fetch, plugins = [] } = params;
   const initPlugins = [structureFromInitValuePlugin, requestDataPlugin, requestStatusPlugin, persistencePlugin, ...plugins];
-  const state:{requestData: { [key: string]: any },requestStatus: { [key: string]: Status }}={requestData:{},requestStatus:{}}
+  const state: { requestData: { [key: string]: any }, requestStatus: { [key: string]: Status } } = { requestData: {}, requestStatus: {} }
   const createFetchModel: CreateFetchModel = (params) => {
     const {
       url,
@@ -143,6 +146,7 @@ const factoryFetchModel:FactoryFetchModel = (params) => {
       mergeParams = (value) => value,
       requestOption = {},
       frequencyFn = null,
+      delayGc = {isNeed: false }
     } = params;
     const handelPlugin = initPlugins.map((plugin) => {
       if (typeof plugin === "function") {
@@ -153,6 +157,12 @@ const factoryFetchModel:FactoryFetchModel = (params) => {
         handelFail() { },
       };
     });
+    const resetState = () => {
+      state.requestData[url] = cloneDeep(initValue)
+      state.requestStatus[url] = 'init'
+    }
+    const delayResetState = debounce(resetState, delayGc.time || 1000 * 60 * 10) // 10m
+
     const dispatch: (params: any) => any = (params) =>
       new Promise((resolve, reject) => {
         state.requestStatus[url] = "loading";
@@ -167,14 +177,21 @@ const factoryFetchModel:FactoryFetchModel = (params) => {
             reject(err);
           });
       });
+    const getContext = () => {
+      if (delayGc && delayGc.isNeed) {
+        delayResetState()
+      }
+      return state.requestData[url] !== undefined
+        ? state.requestData[url]
+        : cloneDeep(initValue)
+    }
+
     return {
+      resetState,
       dispatch: frequencyFn ? frequencyFn(dispatch) : dispatch,
-      getContext: () =>
-      state.requestData[url] !== undefined
-          ? state.requestData[url]
-          : cloneDeep(initValue),
+      getContext,
       getStatus: () =>
-      state.requestStatus[url] !== undefined ? state.requestStatus[url] : "init",
+        state.requestStatus[url] !== undefined ? state.requestStatus[url] : "init",
     };
   };
   const initModel = () => {
