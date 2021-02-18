@@ -17,18 +17,18 @@ type CreateFetchModel = <P = any, V = any>(params: {
   dispatch: (params: P, option?: any) => Promise<V>;
   getContext: () => V;
   getStatus: () => Status;
-  resetState:()=>void
+  resetState: () => void
 };
-type Plugin=(state:any,params:any)=>({
-  handelSuccess:(res:any)=>void,
-  handelFail:(res:any)=>void,
+type Plugin = (state: any, params: any) => ({
+  handelSuccess: (res: any) => void,
+  handelFail: (res: any) => void,
 })
 
-type FactoryFetchModel=(params:{fetch:any,plugins:Plugin[]})=>({
-  createFetchModel:CreateFetchModel, initModel:()=>void
+type FactoryFetchModel = (params: { fetch: any, plugins: Plugin[] }) => ({
+  createFetchModel: CreateFetchModel, initModel: () => void
 })
 
-const requestDataPlugin:Plugin = (state, params) => {
+const requestDataPlugin: Plugin = (state, params) => {
   const { url, initValue, failValue } = params;
   state.requestData[url] = cloneDeep(initValue);
   return {
@@ -43,7 +43,7 @@ const requestDataPlugin:Plugin = (state, params) => {
     },
   };
 };
-const persistencePlugin:Plugin = (state, params) => {
+const persistencePlugin: Plugin = (state, params) => {
   const { persistence = {}, url, initValue, failValue } = params;
   const { isNeed } = persistence;
   const getCacheFromLocalStore = (key, defaultValue) => {
@@ -84,7 +84,7 @@ const persistencePlugin:Plugin = (state, params) => {
   }
 
 }
-const requestStatusPlugin:Plugin = (state, params) => {
+const requestStatusPlugin: Plugin = (state, params) => {
   const { url } = params;
   state.requestStatus[url] = "init";
   return {
@@ -146,7 +146,7 @@ const factoryFetchModel: FactoryFetchModel = (params) => {
       mergeParams = (value) => value,
       requestOption = {},
       frequencyFn = null,
-      delayGc = {isNeed: false }
+      delayGc = { isNeed: false }
     } = params;
     const handelPlugin = initPlugins.map((plugin) => {
       if (typeof plugin === "function") {
